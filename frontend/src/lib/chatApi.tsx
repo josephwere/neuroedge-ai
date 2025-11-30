@@ -1,13 +1,24 @@
-// src/lib/chatApi.ts
-export async function sendMessage(
-  conversationId: string, 
-  text: string, 
-  agent?: string
-) {
+// --- Chat API helper functions ---
+// Handles sending messages, uploading files, and transcribing audio.
+
+export interface UploadResponse {
+  name: string;
+  url: string;
+  size?: number;
+}
+
+export interface TranscribeResponse {
+  text: string;
+}
+
+/**
+ * Send a chat message to a conversation
+ */
+export async function sendMessage(conversationId: string, text: string) {
   const res = await fetch("/api/chat/send", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ conversationId, text, agent }), // include agent
+    body: JSON.stringify({ conversationId, text }),
   });
 
   if (!res.ok) {
@@ -17,7 +28,10 @@ export async function sendMessage(
   return res.json();
 }
 
-export async function uploadFile(file: File) {
+/**
+ * Upload a file to the server
+ */
+export async function uploadFile(file: File): Promise<UploadResponse> {
   const fd = new FormData();
   fd.append("file", file);
 
@@ -33,7 +47,10 @@ export async function uploadFile(file: File) {
   return res.json();
 }
 
-export async function transcribeAudio(file: File) {
+/**
+ * Transcribe an audio file
+ */
+export async function transcribeAudio(file: File): Promise<TranscribeResponse> {
   const fd = new FormData();
   fd.append("file", file);
 
