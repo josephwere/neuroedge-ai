@@ -1,5 +1,5 @@
-/* =========================================
-   ROOT VARIABLES & SAFE AREAS
+/* =========================================  
+   ROOT VARIABLES & SAFE AREAS  
 ========================================= */
 :root {
   /* iOS safe area */
@@ -26,8 +26,8 @@
   --slow: 350ms ease;
 }
 
-/* =========================================
-   BASE GLOBAL STYLES
+/* =========================================  
+   BASE GLOBAL STYLES  
 ========================================= */
 @tailwind base;
 @tailwind components;
@@ -53,8 +53,8 @@ body {
   min-height: 100vh;
 }
 
-/* =========================================
-   APP CONTAINER / LAYOUT HELPERS
+/* =========================================  
+   APP CONTAINER / LAYOUT HELPERS  
 ========================================= */
 
 /* Prevent notch overlap, provide uniform spacing */
@@ -82,8 +82,8 @@ body {
   padding: 0 12px;
 }
 
-/* =========================================
-   PANELS, CARDS, SURFACES
+/* =========================================  
+   PANELS, CARDS, SURFACES  
 ========================================= */
 .panel {
   background: var(--bg-panel);
@@ -106,10 +106,9 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* =========================================
-   INPUTS + BUTTONS
+/* =========================================  
+   INPUTS + BUTTONS  
 ========================================= */
-
 .input {
   width: 100%;
   padding: 10px 12px;
@@ -171,8 +170,8 @@ body {
   border-color: var(--accent);
 }
 
-/* =========================================
-   iOS PWA INSTALL HINT
+/* =========================================  
+   iOS PWA INSTALL HINT  
 ========================================= */
 .ios-install-hint {
   position: fixed;
@@ -191,8 +190,8 @@ body {
   backdrop-filter: blur(8px);
 }
 
-/* =========================================
-   SCROLLBARS (LIGHT & MODERN)
+/* =========================================  
+   SCROLLBARS (LIGHT & MODERN)  
 ========================================= */
 ::-webkit-scrollbar {
   width: 6px;
@@ -206,4 +205,4 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255,255,255,0.2);
-   }
+}
