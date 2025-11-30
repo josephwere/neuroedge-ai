@@ -13,7 +13,7 @@ export default function Page() {
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-3">Agents</h1>
 
-      <p classname="text-gray-600 mb-6">
+      <p className="text-gray-600 mb-6">
         Manage all AI agents. Select an agent to view logs, stats, and configuration.
       </p>
 
