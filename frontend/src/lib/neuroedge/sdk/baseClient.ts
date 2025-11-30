@@ -1,4 +1,3 @@
-// src/lib/neuroedge/sdk/baseClient.ts
 import axios, { AxiosInstance } from 'axios';
 import { getToken, saveToken, getRefreshToken } from '../auth/tokens';
 
@@ -8,7 +7,7 @@ export interface BaseClientOptions {
 
 export interface APIResponse<T = any> {
   success: boolean;
-  data: T;
+  data: T | null;
   error?: string;
 }
 
@@ -18,12 +17,10 @@ export class BaseClient {
   constructor(options?: BaseClientOptions) {
     this.client = axios.create({
       baseURL: options?.baseURL || process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
 
-    // Add Authorization header automatically
+    // Attach token automatically
     this.client.interceptors.request.use((config) => {
       const token = getToken();
       if (token) {
@@ -33,12 +30,11 @@ export class BaseClient {
       return config;
     });
 
-    // Handle 401 responses and refresh token
+    // Handle 401 → refresh token
     this.client.interceptors.response.use(
-      (res) => res,
+      res => res,
       async (err) => {
         const originalReq = err.config;
-
         if (err.response?.status === 401 && !originalReq._retry) {
           originalReq._retry = true;
 
@@ -48,16 +44,13 @@ export class BaseClient {
           try {
             const response = await axios.post(`${this.client.defaults.baseURL}/auth/refresh`, { token: refreshToken });
             const { token: newToken } = response.data;
-
             saveToken(newToken);
             originalReq.headers['Authorization'] = `Bearer ${newToken}`;
-
             return this.client(originalReq);
           } catch (refreshErr) {
             return Promise.reject(refreshErr);
           }
         }
-
         return Promise.reject(err);
       }
     );
@@ -100,5 +93,5 @@ export class BaseClient {
   }
 }
 
-// Optional singleton client
+// Singleton client
 export const apiClient = new BaseClient();
