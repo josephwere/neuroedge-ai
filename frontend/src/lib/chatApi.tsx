@@ -1,67 +1,33 @@
-// --- Chat API helper functions ---
-// Handles sending messages, uploading files, and transcribing audio.
+import { apiClient } from '@/lib/neuroedge/sdk/baseClient';
 
-export interface UploadResponse {
-  name: string;
-  url: string;
-  size?: number;
-}
-
-export interface TranscribeResponse {
-  text: string;
-}
-
-/**
- * Send a chat message to a conversation
- */
+// --- SEND MESSAGE ---
 export async function sendMessage(conversationId: string, text: string) {
-  const res = await fetch("/api/chat/send", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ conversationId, text }),
-  });
+  const res = await apiClient.post('/chat/send', { conversationId, text });
+  return res;
+}
 
-  if (!res.ok) {
-    throw new Error(`Failed to send message: ${res.statusText}`);
-  }
+// --- UPLOAD FILE ---
+export async function uploadFile(file: File) {
+  const fd = new FormData();
+  fd.append('file', file);
+
+  const res = await fetch('/api/uploads', {
+    method: 'POST',
+    body: fd,
+  });
 
   return res.json();
 }
 
-/**
- * Upload a file to the server
- */
-export async function uploadFile(file: File): Promise<UploadResponse> {
+// --- TRANSCRIBE AUDIO ---
+export async function transcribeAudio(file: File) {
   const fd = new FormData();
-  fd.append("file", file);
+  fd.append('file', file);
 
-  const res = await fetch("/api/uploads", {
-    method: "POST",
+  const res = await fetch('/api/audio/transcribe', {
+    method: 'POST',
     body: fd,
   });
-
-  if (!res.ok) {
-    throw new Error(`Failed to upload file: ${res.statusText}`);
-  }
-
-  return res.json();
-}
-
-/**
- * Transcribe an audio file
- */
-export async function transcribeAudio(file: File): Promise<TranscribeResponse> {
-  const fd = new FormData();
-  fd.append("file", file);
-
-  const res = await fetch("/api/audio/transcribe", {
-    method: "POST",
-    body: fd,
-  });
-
-  if (!res.ok) {
-    throw new Error(`Failed to transcribe audio: ${res.statusText}`);
-  }
 
   return res.json();
 }
