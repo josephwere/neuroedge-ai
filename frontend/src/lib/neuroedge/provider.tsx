@@ -1,13 +1,14 @@
+// src/lib/neuroedge/provider.tsx
 'use client';
 
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext } from 'react';
 import { BaseClient } from './sdk/baseClient';
 import TSClient from './typescript';
 import PyClient from './python';
 import GoClient from './go';
 import WSMultiplexer from './sdk/wsMultiplexer';
 
-interface NeuroEdgeContext {
+interface NeuroContextValue {
   ts: TSClient;
   py: PyClient;
   go: GoClient;
@@ -17,29 +18,22 @@ interface NeuroEdgeContext {
   wsMux: WSMultiplexer;
 }
 
-const NeuroCtx = createContext<NeuroEdgeContext | null>(null);
+const NeuroCtx = createContext<NeuroContextValue | null>(null);
 
-export function NeuroEdgeClientProvider({ children }: { children: ReactNode }) {
-  // Backend URLs from environment
-  const tsUrl = process.env.TS_BACKEND_URL || '';
-  const pyUrl = process.env.PY_BACKEND_URL || '';
-  const goUrl = process.env.GO_BACKEND_URL || '';
-  const wsUrl =
-    (process.env.NEXT_PUBLIC_WS_URL || tsUrl || 'ws://localhost:4000').replace(/^http/, 'ws') +
-    '/ws';
+export function NeuroEdgeClientProvider({ children }: { children: React.ReactNode }) {
+  const ts = new TSClient(process.env.TS_BACKEND_URL);
+  const tsBase = new BaseClient({ baseURL: process.env.TS_BACKEND_URL });
 
-  // Clients
-  const ts = new TSClient(tsUrl);
-  const py = new PyClient(pyUrl);
-  const go = new GoClient(goUrl);
+  const py = new PyClient(process.env.PY_BACKEND_URL);
+  const pyBase = new BaseClient({ baseURL: process.env.PY_BACKEND_URL });
 
-  // Base clients
-  const tsBase = new BaseClient(tsUrl);
-  const pyBase = new BaseClient(pyUrl);
-  const goBase = new BaseClient(goUrl);
+  const go = new GoClient(process.env.GO_BACKEND_URL);
+  const goBase = new BaseClient({ baseURL: process.env.GO_BACKEND_URL });
 
-  // WebSocket multiplexer
-  const wsMux = new WSMultiplexer(wsUrl);
+  const wsMux = new WSMultiplexer(
+    (process.env.NEXT_PUBLIC_WS_URL || process.env.TS_BACKEND_URL || 'ws://localhost:4000')
+      .replace(/^http/, 'ws') + '/ws'
+  );
 
   return (
     <NeuroCtx.Provider value={{ ts, py, go, tsBase, pyBase, goBase, wsMux }}>
@@ -48,7 +42,7 @@ export function NeuroEdgeClientProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useNeuroEdge(): NeuroEdgeContext {
+export function useNeuroEdge() {
   const ctx = useContext(NeuroCtx);
   if (!ctx) throw new Error('useNeuroEdge must be used within NeuroEdgeClientProvider');
   return ctx;
