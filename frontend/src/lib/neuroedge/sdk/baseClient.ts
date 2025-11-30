@@ -1,5 +1,5 @@
 // src/lib/neuroedge/sdk/baseClient.ts
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { getToken, saveToken, getRefreshToken } from '../auth/tokens';
 
 export interface BaseClientOptions {
@@ -8,8 +8,13 @@ export interface BaseClientOptions {
 
 export interface APIResponse<T = any> {
   success: boolean;
-  data: T;
+  data: T | null;
   error?: string;
+}
+
+// Extend AxiosRequestConfig to include _retry
+interface RetryAxiosRequestConfig extends AxiosRequestConfig {
+  _retry?: boolean;
 }
 
 export class BaseClient {
@@ -18,12 +23,10 @@ export class BaseClient {
   constructor(options?: BaseClientOptions) {
     this.client = axios.create({
       baseURL: options?.baseURL || process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
 
-    // Intercept requests to add Authorization header
+    // Request interceptor: add Authorization
     this.client.interceptors.request.use((config) => {
       const token = getToken();
       if (token) {
@@ -33,11 +36,11 @@ export class BaseClient {
       return config;
     });
 
-    // Intercept responses to handle 401 and refresh token
+    // Response interceptor: handle 401 & refresh token
     this.client.interceptors.response.use(
       (res) => res,
       async (err) => {
-        const originalReq = err.config;
+        const originalReq = err.config as RetryAxiosRequestConfig;
 
         if (err.response?.status === 401 && !originalReq._retry) {
           originalReq._retry = true;
@@ -100,5 +103,8 @@ export class BaseClient {
   }
 }
 
-// Export a singleton client if needed
+// Named export only
+export { BaseClient };
+
+// Optional singleton
 export const apiClient = new BaseClient();
