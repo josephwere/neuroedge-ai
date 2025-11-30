@@ -31,12 +31,21 @@ export default function ChatPage() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, streamBuffer]);
 
-  /* Websocket streaming binding */
+  /* WebSocket streaming binding */
   useChatWS(
     activeConv || 'global',
     (chunk: string) => setStreamBuffer(prev => prev + chunk),
     (full: string) => {
-      appendMessage({ role: 'assistant', text: full });
+      if (!activeConv) return;
+
+      appendMessage({
+        id: crypto.randomUUID(),               // unique ID
+        conversationId: activeConv,            // associate with conversation
+        role: 'assistant',
+        text: full,
+        createdAt: new Date().toISOString(),   // timestamp
+      });
+
       setStreamBuffer('');
     }
   );
@@ -45,9 +54,15 @@ export default function ChatPage() {
   const handleSend = async () => {
     if (!input.trim() || !activeConv) return;
 
-    appendMessage({ role: 'user', text: input });
-    await sendMessage(activeConv, input, activeAgent);
+    appendMessage({
+      id: crypto.randomUUID(),
+      conversationId: activeConv,
+      role: 'user',
+      text: input,
+      createdAt: new Date().toISOString(),
+    });
 
+    await sendMessage(activeConv, input, activeAgent);
     setInput('');
   };
 
@@ -58,9 +73,12 @@ export default function ChatPage() {
     const meta = await uploadFile(file);
 
     appendMessage({
+      id: crypto.randomUUID(),
+      conversationId: activeConv,
       role: 'user',
       file: meta,
-      text: `Uploaded: ${meta.name}`
+      text: `Uploaded: ${meta.name}`,
+      createdAt: new Date().toISOString(),
     });
   };
 
@@ -94,7 +112,6 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen bg-app-dark text-gray-200">
-
       {/* LEFT SIDEBAR */}
       <aside className="w-80 border-r border-gray-700 p-4 flex flex-col gap-4 bg-[#0d1320]">
         <ConversationFolders onSelect={(id) => setActiveConv(id)} />
@@ -142,13 +159,16 @@ export default function ChatPage() {
 
             {/* INPUT BAR */}
             <div className="mt-3 flex items-center gap-3 bg-[#0f1624] border border-gray-700 p-3 rounded-xl shadow-soft">
-              
               {/* Upload */}
               <label className="p-2 rounded-lg bg-[#1a2332] cursor-pointer hover:bg-[#1f2a3e]">
-                <input type="file" className="hidden" onChange={(ev) => {
-                  const f = ev.target.files?.[0];
-                  if (f) handleFile(f);
-                }} />
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={(ev) => {
+                    const f = ev.target.files?.[0];
+                    if (f) handleFile(f);
+                  }}
+                />
                 📎
               </label>
 
