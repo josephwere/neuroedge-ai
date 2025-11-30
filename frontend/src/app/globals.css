@@ -1,2 +1,8 @@
-@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\n/* global styles */
-body { margin: 0; }
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* global styles */
+body {
+  margin: 0;
+}
