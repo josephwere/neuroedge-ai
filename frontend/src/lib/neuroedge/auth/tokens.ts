@@ -1,14 +1,12 @@
-export function getAccessToken() {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("neuroedge_token");
-}
+// src/lib/neuroedge/auth/tokens.ts
+export const getToken = (): string | null => {
+  return localStorage.getItem('token');
+};
 
-export function setAccessToken(token: string) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("neuroedge_token", token);
-}
+export const saveToken = (token: string) => {
+  localStorage.setItem('token', token);
+};
 
-export function clearAccessToken() {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem("neuroedge_token");
-}
+export const getRefreshToken = (): string | null => {
+  return localStorage.getItem('refreshToken');
+};
