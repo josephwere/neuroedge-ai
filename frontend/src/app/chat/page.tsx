@@ -34,8 +34,8 @@ export default function ChatPage() {
   /* Websocket streaming binding */
   useChatWS(
     activeConv || 'global',
-    chunk => setStreamBuffer(prev => prev + chunk),
-    full => {
+    (chunk: string) => setStreamBuffer(prev => prev + chunk),
+    (full: string) => {
       appendMessage({ role: 'assistant', text: full });
       setStreamBuffer('');
     }
@@ -187,4 +187,4 @@ export default function ChatPage() {
       </aside>
     </div>
   );
-                   }
+}
