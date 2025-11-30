@@ -13,15 +13,6 @@ import { useConversations } from '@/hooks/useConversations';
 import useChatWS from '@/hooks/useChatWS';
 import { sendMessage, uploadFile, transcribeAudio } from '@/lib/chatApi';
 
-export interface Message {
-  id: string;
-  conversationId: string;
-  role: 'user' | 'assistant';
-  text?: string;
-  file?: any;
-  createdAt: number; // timestamp in ms
-}
-
 export default function ChatPage() {
   const [activeConv, setActiveConv] = useState<string>();
   const [activeAgent, setActiveAgent] = useState('neuro-core');
@@ -31,7 +22,8 @@ export default function ChatPage() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const { messages, appendMessage, updateMessage } = useConversations(activeConv);
+  const { messages, appendMessage, updateMessage } =
+    useConversations(activeConv);
 
   /* Auto scroll */
   useEffect(() => {
@@ -51,7 +43,7 @@ export default function ChatPage() {
         conversationId: activeConv,
         role: 'assistant',
         text: full,
-        createdAt: Date.now(), // ✅ numeric timestamp
+        createdAt: Date.now(), // timestamp as number
       });
 
       setStreamBuffer('');
@@ -70,7 +62,12 @@ export default function ChatPage() {
       createdAt: Date.now(),
     });
 
-    await sendMessage(activeConv, input, activeAgent);
+    try {
+      await sendMessage(activeConv, input, activeAgent);
+    } catch (err) {
+      console.error('Send message failed:', err);
+    }
+
     setInput('');
   };
 
@@ -78,16 +75,20 @@ export default function ChatPage() {
   const handleFile = async (file: File) => {
     if (!activeConv) return;
 
-    const meta = await uploadFile(file);
+    try {
+      const meta = await uploadFile(file);
 
-    appendMessage({
-      id: crypto.randomUUID(),
-      conversationId: activeConv,
-      role: 'user',
-      file: meta,
-      text: `Uploaded: ${meta.name}`,
-      createdAt: Date.now(),
-    });
+      appendMessage({
+        id: crypto.randomUUID(),
+        conversationId: activeConv,
+        role: 'user',
+        file: meta,
+        text: `Uploaded: ${meta.name}`,
+        createdAt: Date.now(),
+      });
+    } catch (err) {
+      console.error('File upload failed:', err);
+    }
   };
 
   /* Drag & Drop support */
@@ -97,23 +98,29 @@ export default function ChatPage() {
     if (file) handleFile(file);
   };
 
-  const allowDrop = (ev: DragEvent<HTMLDivElement>) => ev.preventDefault();
+  const allowDrop = (ev: DragEvent<HTMLDivElement>) => {
+    ev.preventDefault();
+  };
 
   /* --- MICROPHONE RECORDING → STT --- */
   const handleMic = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const recorder = new MediaRecorder(stream);
-    const chunks: BlobPart[] = [];
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: BlobPart[] = [];
 
-    recorder.ondataavailable = e => chunks.push(e.data);
-    recorder.onstop = async () => {
-      const file = new File(chunks, 'speech.webm', { type: 'audio/webm' });
-      const { text } = await transcribeAudio(file);
-      setInput(text);
-    };
+      recorder.ondataavailable = e => chunks.push(e.data);
+      recorder.onstop = async () => {
+        const file = new File(chunks, 'speech.webm', { type: 'audio/webm' });
+        const { text } = await transcribeAudio(file);
+        setInput(text);
+      };
 
-    recorder.start();
-    setTimeout(() => recorder.stop(), 2500);
+      recorder.start();
+      setTimeout(() => recorder.stop(), 2500);
+    } catch (err) {
+      console.error('Microphone access failed:', err);
+    }
   };
 
   return (
