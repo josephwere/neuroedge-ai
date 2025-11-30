@@ -2,12 +2,12 @@
 
 import React, { createContext, useContext } from 'react';
 import TSClient from './typescript';
+import { BaseClient } from './sdk/baseClient';
+import WSMultiplexer from './sdk/wsMultiplexer';
 import PyClient from './python';
 import GoClient from './go';
-import BaseClient from './sdk/baseClient';
-import WSMultiplexer from './sdk/wsMultiplexer';
 
-interface NeuroEdgeContext {
+interface NeuroCtxType {
   ts: TSClient;
   py: PyClient;
   go: GoClient;
@@ -17,7 +17,7 @@ interface NeuroEdgeContext {
   wsMux: WSMultiplexer;
 }
 
-const NeuroCtx = createContext<NeuroEdgeContext | null>(null);
+const NeuroCtx = createContext<NeuroCtxType | null>(null);
 
 export function NeuroEdgeClientProvider({ children }: { children: React.ReactNode }) {
   const ts = new TSClient(process.env.TS_BACKEND_URL);
@@ -42,6 +42,6 @@ export function NeuroEdgeClientProvider({ children }: { children: React.ReactNod
 
 export function useNeuroEdge() {
   const ctx = useContext(NeuroCtx);
-  if (!ctx) throw new Error('useNeuroEdge must be used within a NeuroEdgeClientProvider');
+  if (!ctx) throw new Error('useNeuroEdge must be used within NeuroEdgeClientProvider');
   return ctx;
 }
