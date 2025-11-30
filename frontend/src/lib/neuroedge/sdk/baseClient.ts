@@ -20,7 +20,7 @@ export class BaseClient {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    // Attach token automatically
+    // Add Authorization header on each request
     this.client.interceptors.request.use((config) => {
       const token = getToken();
       if (token) {
@@ -30,11 +30,12 @@ export class BaseClient {
       return config;
     });
 
-    // Handle 401 → refresh token
+    // Handle 401 + refresh token
     this.client.interceptors.response.use(
-      res => res,
+      (res) => res,
       async (err) => {
         const originalReq = err.config;
+
         if (err.response?.status === 401 && !originalReq._retry) {
           originalReq._retry = true;
 
@@ -42,15 +43,21 @@ export class BaseClient {
           if (!refreshToken) return Promise.reject(err);
 
           try {
-            const response = await axios.post(`${this.client.defaults.baseURL}/auth/refresh`, { token: refreshToken });
+            const response = await axios.post(
+              `${this.client.defaults.baseURL}/auth/refresh`,
+              { token: refreshToken }
+            );
             const { token: newToken } = response.data;
+
             saveToken(newToken);
             originalReq.headers['Authorization'] = `Bearer ${newToken}`;
+
             return this.client(originalReq);
           } catch (refreshErr) {
             return Promise.reject(refreshErr);
           }
         }
+
         return Promise.reject(err);
       }
     );
@@ -93,5 +100,5 @@ export class BaseClient {
   }
 }
 
-// Singleton client
+// Optional: singleton client if needed
 export const apiClient = new BaseClient();
