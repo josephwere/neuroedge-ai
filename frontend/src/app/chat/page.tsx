@@ -13,6 +13,15 @@ import { useConversations } from '@/hooks/useConversations';
 import useChatWS from '@/hooks/useChatWS';
 import { sendMessage, uploadFile, transcribeAudio } from '@/lib/chatApi';
 
+export interface Message {
+  id: string;
+  conversationId: string;
+  role: 'user' | 'assistant';
+  text?: string;
+  file?: any;
+  createdAt: number; // timestamp in ms
+}
+
 export default function ChatPage() {
   const [activeConv, setActiveConv] = useState<string>();
   const [activeAgent, setActiveAgent] = useState('neuro-core');
@@ -22,8 +31,7 @@ export default function ChatPage() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const { messages, appendMessage, updateMessage } =
-    useConversations(activeConv);
+  const { messages, appendMessage, updateMessage } = useConversations(activeConv);
 
   /* Auto scroll */
   useEffect(() => {
@@ -39,11 +47,11 @@ export default function ChatPage() {
       if (!activeConv) return;
 
       appendMessage({
-        id: crypto.randomUUID(),               // unique ID
-        conversationId: activeConv,            // associate with conversation
+        id: crypto.randomUUID(),
+        conversationId: activeConv,
         role: 'assistant',
         text: full,
-        createdAt: new Date().toISOString(),   // timestamp
+        createdAt: Date.now(), // ✅ numeric timestamp
       });
 
       setStreamBuffer('');
@@ -59,7 +67,7 @@ export default function ChatPage() {
       conversationId: activeConv,
       role: 'user',
       text: input,
-      createdAt: new Date().toISOString(),
+      createdAt: Date.now(),
     });
 
     await sendMessage(activeConv, input, activeAgent);
@@ -78,7 +86,7 @@ export default function ChatPage() {
       role: 'user',
       file: meta,
       text: `Uploaded: ${meta.name}`,
-      createdAt: new Date().toISOString(),
+      createdAt: Date.now(),
     });
   };
 
@@ -89,9 +97,7 @@ export default function ChatPage() {
     if (file) handleFile(file);
   };
 
-  const allowDrop = (ev: DragEvent<HTMLDivElement>) => {
-    ev.preventDefault();
-  };
+  const allowDrop = (ev: DragEvent<HTMLDivElement>) => ev.preventDefault();
 
   /* --- MICROPHONE RECORDING → STT --- */
   const handleMic = async () => {
