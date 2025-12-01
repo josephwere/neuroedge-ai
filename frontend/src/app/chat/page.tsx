@@ -11,6 +11,16 @@ import { useConversations } from '@/hooks/useConversations';
 import useChatWS from '@/hooks/useChatWS';
 import { sendMessage, uploadFile, transcribeAudio } from '@/lib/chatApi';
 
+// --- FIX: Create a local message type that supports file meta ---
+type MessageWithFile = {
+  id: string;
+  conversationId: string;
+  role: 'user' | 'assistant';
+  text?: string;
+  createdAt: number;
+  file?: any; // <--- FIX: added this
+};
+
 export default function ChatPage() {
   const [activeConv, setActiveConv] = useState<string>();
   const [activeAgent, setActiveAgent] = useState('neuro-core');
@@ -38,7 +48,7 @@ export default function ChatPage() {
         conversationId: activeConv,
         role: 'assistant',
         text: full,
-        createdAt: Date.now(), // timestamp as number
+        createdAt: Date.now(),
       });
 
       setStreamBuffer('');
@@ -67,14 +77,16 @@ export default function ChatPage() {
 
     const meta = await uploadFile(file);
 
-    appendMessage({
+    const msg: MessageWithFile = {
       id: crypto.randomUUID(),
       conversationId: activeConv,
       role: 'user',
       text: `Uploaded: ${meta.name}`,
       createdAt: Date.now(),
-      file: meta,
-    });
+      file: meta, // <--- FIX: no more TS error
+    };
+
+    appendMessage(msg);
   };
 
   // Drag & Drop support
@@ -115,7 +127,10 @@ export default function ChatPage() {
       {/* MAIN CHAT AREA */}
       <main className="flex-1 p-4 flex flex-col" onDragOver={allowDrop} onDrop={onDrop}>
         {/* MESSAGES SCROLL AREA */}
-        <div ref={scrollRef} className="flex-1 overflow-auto space-y-4 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-auto space-y-4 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent"
+        >
           {!activeConv && (
             <div className="flex h-full items-center justify-center text-gray-400">
               Select or create a conversation…
@@ -123,7 +138,9 @@ export default function ChatPage() {
           )}
 
           {activeConv &&
-            messages.map(m => <MessageItem key={m.id} msg={m} onUpdate={() => updateMessage(m)} />)}
+            messages.map(m => (
+              <MessageItem key={m.id} msg={m} onUpdate={() => updateMessage(m)} />
+            ))}
 
           {/* STREAMING MESSAGE */}
           {streamBuffer && (
@@ -145,12 +162,19 @@ export default function ChatPage() {
             <div className="mt-3 flex items-center gap-3 bg-[#0f1624] border border-gray-700 p-3 rounded-xl shadow-soft">
               {/* Upload */}
               <label className="p-2 rounded-lg bg-[#1a2332] cursor-pointer hover:bg-[#1f2a3e]">
-                <input type="file" className="hidden" onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
+                />
                 📎
               </label>
 
               {/* Mic */}
-              <button onClick={handleMic} className="p-2 rounded-lg bg-[#1a2332] hover:bg-[#1f2a3e]">
+              <button
+                onClick={handleMic}
+                className="p-2 rounded-lg bg-[#1a2332] hover:bg-[#1f2a3e]"
+              >
                 🎤
               </button>
 
@@ -164,7 +188,10 @@ export default function ChatPage() {
               />
 
               {/* SEND */}
-              <button onClick={handleSend} className="px-4 py-2 bg-neuro-500 hover:bg-neuro-600 rounded-lg text-white font-medium shadow-glow">
+              <button
+                onClick={handleSend}
+                className="px-4 py-2 bg-neuro-500 hover:bg-neuro-600 rounded-lg text-white font-medium shadow-glow"
+              >
                 Send
               </button>
             </div>
