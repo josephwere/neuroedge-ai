@@ -11,14 +11,26 @@ import { useConversations } from '@/hooks/useConversations';
 import useChatWS from '@/hooks/useChatWS';
 import { sendMessage, uploadFile, transcribeAudio } from '@/lib/chatApi';
 
-// --- FIX: Create a local message type that supports file meta ---
-type MessageWithFile = {
+// ---------------------------------------------------------------------
+// FIX 1: Strong file metadata typing
+// ---------------------------------------------------------------------
+type FileMeta = {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+};
+
+// ---------------------------------------------------------------------
+// FIX 2: Local message type that EXTENDS your global store type
+// ---------------------------------------------------------------------
+type ChatMessage = {
   id: string;
   conversationId: string;
   role: 'user' | 'assistant';
-  text?: string;
+  text: string;          // <- always defined (fixes TS build)
   createdAt: number;
-  file?: any; // <--- FIX: added this
+  file?: FileMeta;       // <- file support
 };
 
 export default function ChatPage() {
@@ -36,7 +48,9 @@ export default function ChatPage() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, streamBuffer]);
 
-  // WebSocket streaming binding
+  // ---------------------------------------------------------------------
+  // FIX 3: WebSocket streaming handling
+  // ---------------------------------------------------------------------
   useChatWS(
     activeConv || 'global',
     (chunk: string) => setStreamBuffer(prev => prev + chunk),
@@ -48,57 +62,63 @@ export default function ChatPage() {
         conversationId: activeConv,
         role: 'assistant',
         text: full,
-        createdAt: Date.now(),
+        createdAt: Date.now()
       });
 
       setStreamBuffer('');
     }
   );
 
-  // --- SEND MESSAGE ---
+  // ---------------------------------------------------------------------
+  // SEND MESSAGE
+  // ---------------------------------------------------------------------
   const handleSend = async () => {
     if (!input.trim() || !activeConv) return;
 
-    appendMessage({
+    const msg: ChatMessage = {
       id: crypto.randomUUID(),
       conversationId: activeConv,
       role: 'user',
       text: input,
-      createdAt: Date.now(),
-    });
+      createdAt: Date.now()
+    };
 
+    appendMessage(msg);
     await sendMessage(activeConv, input);
     setInput('');
   };
 
-  // --- FILE UPLOAD ---
+  // ---------------------------------------------------------------------
+  // FILE UPLOAD (FIXED)
+  // ---------------------------------------------------------------------
   const handleFile = async (file: File) => {
     if (!activeConv) return;
 
     const meta = await uploadFile(file);
 
-    const msg: MessageWithFile = {
+    const msg: ChatMessage = {
       id: crypto.randomUUID(),
       conversationId: activeConv,
       role: 'user',
-      text: `Uploaded: ${meta.name}`,
+      text: `Uploaded: ${meta.name}`,    // <- always a string
       createdAt: Date.now(),
-      file: meta, // <--- FIX: no more TS error
+      file: meta as FileMeta             // <- fix typing
     };
 
     appendMessage(msg);
   };
 
-  // Drag & Drop support
+  // Drag & drop
   const onDrop = async (ev: DragEvent<HTMLDivElement>) => {
     ev.preventDefault();
     const file = ev.dataTransfer.files?.[0];
     if (file) handleFile(file);
   };
-
   const allowDrop = (ev: DragEvent<HTMLDivElement>) => ev.preventDefault();
 
-  // --- MICROPHONE RECORDING → STT ---
+  // ---------------------------------------------------------------------
+  // MICROPHONE → STT
+  // ---------------------------------------------------------------------
   const handleMic = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const recorder = new MediaRecorder(stream);
@@ -117,16 +137,18 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen bg-app-dark text-gray-200">
+      
       {/* LEFT SIDEBAR */}
       <aside className="w-80 border-r border-gray-700 p-4 flex flex-col gap-4 bg-[#0d1320]">
-        <ConversationFolders onSelect={(id) => setActiveConv(id)} />
+        <ConversationFolders onSelect={id => setActiveConv(id)} />
         <AgentSwitcher active={activeAgent} onChange={setActiveAgent} />
         {activeConv && <TokenMeter conversationId={activeConv} />}
       </aside>
 
       {/* MAIN CHAT AREA */}
       <main className="flex-1 p-4 flex flex-col" onDragOver={allowDrop} onDrop={onDrop}>
-        {/* MESSAGES SCROLL AREA */}
+        
+        {/* MESSAGES */}
         <div
           ref={scrollRef}
           className="flex-1 overflow-auto space-y-4 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent"
@@ -142,24 +164,23 @@ export default function ChatPage() {
               <MessageItem key={m.id} msg={m} onUpdate={() => updateMessage(m)} />
             ))}
 
-          {/* STREAMING MESSAGE */}
+          {/* STREAMING */}
           {streamBuffer && (
             <div className="max-w-[70%] bg-[#1a2332] px-4 py-3 rounded-xl border border-gray-700">
-              {streamBuffer}
-              <span className="animate-pulse">▋</span>
+              {streamBuffer} <span className="animate-pulse">▋</span>
             </div>
           )}
         </div>
 
-        {/* AGENT TOOLS */}
+        {/* TOOLS + INPUT */}
         {activeConv && (
           <>
             <div className="mt-3">
-              <AgentTools onRun={(tool) => alert(`Run tool ${tool}`)} />
+              <AgentTools onRun={tool => alert(`Run tool ${tool}`)} />
             </div>
 
-            {/* INPUT BAR */}
             <div className="mt-3 flex items-center gap-3 bg-[#0f1624] border border-gray-700 p-3 rounded-xl shadow-soft">
+
               {/* Upload */}
               <label className="p-2 rounded-lg bg-[#1a2332] cursor-pointer hover:bg-[#1f2a3e]">
                 <input
@@ -178,7 +199,7 @@ export default function ChatPage() {
                 🎤
               </button>
 
-              {/* Text input */}
+              {/* Input */}
               <input
                 value={input}
                 onChange={e => setInput(e.target.value)}
@@ -187,7 +208,7 @@ export default function ChatPage() {
                 className="flex-1 px-3 py-2 bg-[#0d1117] border border-gray-700 rounded-lg focus:outline-none"
               />
 
-              {/* SEND */}
+              {/* Send */}
               <button
                 onClick={handleSend}
                 className="px-4 py-2 bg-neuro-500 hover:bg-neuro-600 rounded-lg text-white font-medium shadow-glow"
@@ -199,7 +220,7 @@ export default function ChatPage() {
         )}
       </main>
 
-      {/* RIGHT SIDEBAR */}
+      {/* RIGHT LOGS */}
       <aside className="w-80 border-l border-gray-700 p-4 bg-[#0d1320]">
         <AgentLogsPanel agentId={activeAgent} />
       </aside>
